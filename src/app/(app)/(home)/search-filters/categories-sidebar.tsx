@@ -7,39 +7,51 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 
-import { CustomCategory } from "../types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
 interface Props{
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    data: CustomCategory[]; // Remove this later
 };
 
 export const CategoriesSidebar = ({
     open,
     onOpenChange,
-    data,
+    // data,
 }: Props) => {
-    const router = useRouter
+    const trpc = useTRPC();
+    const { data } = useQuery(trpc.categories.getMany.queryOptions());
 
-    const [parentCategories, setParentCategories] = useState<CustomCategory[] | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<CustomCategory | null>(null);
+    const router = useRouter()
+
+    const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<CategoriesGetManyOutput[1] | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
 
     // If we have parent categories, show those, otherwise show root categories
     const currentCategories = parentCategories ?? data ?? [];
 
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const handleOpenChange = (open: boolean) => {
-        setSelectedCategory(null);
-        setParentCategories(null);
+        if (!open) {
+            // Only reset state when closing
+            setSelectedCategory(null);
+            setParentCategories(null);
+        }
         onOpenChange(open);
     }
 
-    const handleCategoryClick = (category: CustomCategory) => {
+    const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
         if (category.subcategories && category.subcategories.length > 0){
-            setParentCategories(category.subcategories as CustomCategory[]);
+            setParentCategories(category.subcategories as CategoriesGetManyOutput);
             setSelectedCategory(category);
         } else {
             // This is a left category (no subcategories)
@@ -66,14 +78,14 @@ export const CategoriesSidebar = ({
         }
     }
 
-    const backgroundColor = selectedCategory?.color || "white";
-
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
+        <Sheet open={isMounted && open} onOpenChange={handleOpenChange}>
             <SheetContent
                 side="left"
                 className="p-0 transition-none"
-                style={{ backgroundColor }}
+                style={{ 
+                    backgroundColor: isMounted ? (selectedCategory?.color || "white") : "white"
+                }}
             >
                 <SheetHeader className="p-4 border-b">
                     <SheetTitle>
@@ -91,7 +103,7 @@ export const CategoriesSidebar = ({
                             Back
                         </button>
                     )}
-                    {currentCategories.map((category) => (
+                    {currentCategories?.map((category) => (
                         <button
                             key={category.slug}
                             onClick={() => handleCategoryClick(category)}
