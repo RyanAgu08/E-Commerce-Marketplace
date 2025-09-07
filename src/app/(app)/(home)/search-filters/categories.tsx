@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import { CategoryDropdown } from "./category-dropdown";
-import { CustomCategory } from "../types";
 import { CategoriesSidebar } from "./categories-sidebar";
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
 interface Props {
-    data: CustomCategory[];
+    data: CategoriesGetManyOutput
 };
 
 export const Categories = ({ data }: Props) => {
@@ -22,6 +22,11 @@ export const Categories = ({ data }: Props) => {
     const [visibleCount, setVisibleCount] = useState(data.length);
     const [isAnyHovered, setIsAnyHovered] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Ensure sidebar is closed on component mount
+    useEffect(() => {
+        setIsSidebarOpen(false);
+    }, []);
 
     const activeCategory = "all";
 
@@ -60,7 +65,7 @@ export const Categories = ({ data }: Props) => {
     return (
         <div className="relative w-full">
             {/* Categories sidebar */}
-            <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} data={data} />
+            <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
             {/* Hidden div measure all items */}
             <div
